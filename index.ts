@@ -11,6 +11,8 @@ import passport from "passport";
 import basicStrategy from 'passport-http';
 import bcrypt from 'bcrypt-nodejs';
 import { db, UserDb } from "./db";
+import { createServer } from "http";
+import { pubsub } from "./schema/resolvers";
 
 let users = db.users;
 
@@ -43,6 +45,11 @@ passport.use('basic-signup', new basicStrategy.BasicStrategy({passReqToCallback:
         name: req.body.name,
       };
       users.push(user);
+
+      pubsub.publish('userAdded', {
+        userAdded: user,
+      });
+
       return done(null, user);
     }
     return done(null, false);
@@ -101,9 +108,30 @@ const apollo = new ApolloServer({
   schema,
   context(received: any) {
     return {
-      currentUser: received.req!['user'],
+      currentUser: received.connection ? received.connection.context.currentUser : received.req!['user'],
     }
   },
+  subscriptions: {
+    onConnect: (connectionParams: any, webSocket: any) => {
+      if (connectionParams.authToken) {
+        // create a buffer and tell it the data coming in is base64
+        const buf = new Buffer(connectionParams.authToken.split(' ')[1], 'base64');
+        // read it back out as a string
+        const [username, password]: string[] = buf.toString().split(':');
+        if (username && password) {
+          const currentUser = users.find(user => user.username == username);
+
+          if (currentUser && validPassword(password, currentUser.password)) {
+            // Set context for the WebSocket
+            return {currentUser};
+          } else {
+            throw new Error('Wrong credentials!');
+          }
+        }
+      }
+      throw new Error('Missing auth token!');
+    }
+  }
 });
 
 apollo.applyMiddleware({
@@ -111,4 +139,11 @@ apollo.applyMiddleware({
   path: '/graphql'
 });
 
-app.listen(PORT);
+// Wrap the Express server
+const ws = createServer(app);
+
+apollo.installSubscriptionHandlers(ws);
+
+ws.listen(PORT, () => {
+  console.log(`Apollo Server is now running on http://localhost:${PORT}`);
+});
