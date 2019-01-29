@@ -11,7 +11,7 @@ interface UserConstructor {
   phone?: string;
 }
 
-@Entity()
+@Entity('app_user')
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
