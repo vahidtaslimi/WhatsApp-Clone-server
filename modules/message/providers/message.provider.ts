@@ -1,4 +1,4 @@
-import { Injectable, ProviderScope } from '@graphql-modules/di'
+import { Injectable } from '@graphql-modules/di'
 import { PubSub } from 'apollo-server-express'
 import { Connection } from 'typeorm'
 import { User } from '../../../entity/User';
@@ -27,8 +27,6 @@ export class MessageProvider {
   }
 
   async addMessage(chatId: string, content: string) {
-    console.log("DEBUG: MessageModule's addMessage");
-
     if (content === null || content === '') {
       throw new Error(`Cannot add empty or null messages.`);
     }
@@ -88,12 +86,6 @@ export class MessageProvider {
       content,
       type: MessageType.TEXT,
       holders,
-      /*recipients: holders.reduce<Recipient[]>((filtered, user) => {
-        if (user.id !== currentUser.id) {
-          filtered.push(new Recipient({user}));
-        }
-        return filtered;
-      }, []),*/
     }));
 
     this.pubsub.publish('messageAdded', {
@@ -158,23 +150,10 @@ export class MessageProvider {
       } else {
         // Message is flagged for removal
         removedMessages.push(message);
-        /*const recipients = await this.connection
-          .createQueryBuilder(Recipient, 'recipient')
-          .innerJoinAndSelect('recipient.message', 'message', 'message.id = :messageId', {messageId: message.id})
-          .innerJoinAndSelect('recipient.user', 'user')
-          .getMany();
-
-        for (let recipient of recipients) {
-          await this.recipientProvider.repository.remove(recipient);
-        }*/
-
-        //await this.repository.remove(message);
       }
 
       return filtered;
     }, Promise.resolve([]));
-
-    //await this.chatProvider.repository.save(chat);
 
     return { deletedIds, removedMessages };
   }
@@ -214,8 +193,6 @@ export class MessageProvider {
   }
 
   async removeChat(chatId: string, messages?: Message[]) {
-    console.log("DEBUG: MessageModule's removeChat");
-
     if (!messages) {
       messages = await this._removeChatGetMessages(chatId);
     }

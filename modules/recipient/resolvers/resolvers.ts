@@ -3,7 +3,9 @@ import { RecipientProvider } from '../providers/recipient.provider';
 
 export default {
   Mutation: {
+    // TODO: implement me
     markAsReceived: async (obj, { chatId }) => false,
+    // TODO: implement me
     markAsRead: async (obj, { chatId }) => false,
     // We may also need to remove the recipients
     removeChat: async (obj, { chatId }, { injector }) => injector.get(RecipientProvider).removeChat(chatId),

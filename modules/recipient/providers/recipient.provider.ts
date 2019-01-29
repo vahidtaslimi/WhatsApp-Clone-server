@@ -51,8 +51,6 @@ export class RecipientProvider {
   }
 
   async removeChat(chatId: string) {
-    console.log("DEBUG: RecipientModule's removeChat");
-
     const messages = await this.messageProvider._removeChatGetMessages(chatId);
 
     for (let message of messages) {
@@ -72,9 +70,6 @@ export class RecipientProvider {
   }
 
   async addMessage(chatId: string, content: string) {
-
-    console.log("DEBUG: RecipientModule's addMessage");
-
     const message = await this.messageProvider.addMessage(chatId, content);
 
     for (let user of message.holders) {

@@ -10,7 +10,6 @@ import {
 } from 'typeorm';
 import { Message } from './Message';
 import { User } from './User';
-import { Recipient } from './Recipient';
 
 interface ChatConstructor {
   name?: string;
@@ -58,9 +57,6 @@ export class Chat {
 
   @OneToMany(type => Message, message => message.chat, {cascade: ["insert", "update"], eager: true})
   messages: Message[];
-
-  //@OneToMany(type => Recipient, recipient => recipient.chat)
-  //recipients: Recipient[];
 
   constructor({name, picture, allTimeMembers, listingMembers, actualGroupMembers, admins, owner, messages}: ChatConstructor = {}) {
     if (name) {

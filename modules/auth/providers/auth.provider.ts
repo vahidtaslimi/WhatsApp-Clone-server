@@ -62,7 +62,7 @@ export class AuthProvider implements OnRequest, OnConnect {
           password: this.generateHash(password),
           name,
         })
-      )
+      );
       this.pubsub.publish('userAdded', {
         userAdded: user,
       });

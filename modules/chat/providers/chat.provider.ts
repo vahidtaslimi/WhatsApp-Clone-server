@@ -175,7 +175,6 @@ export class ChatProvider {
   }
 
   async removeChat(chatId: string) {
-    console.log("DEBUG: ChatModule's removeChat");
     const chat = await this.createQueryBuilder()
       .whereInIds(Number(chatId))
       .innerJoinAndSelect('chat.listingMembers', 'listingMembers')

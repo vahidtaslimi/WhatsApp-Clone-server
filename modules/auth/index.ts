@@ -7,7 +7,7 @@ import { APP } from '../app.symbols';
 import { PubSub } from 'apollo-server-express';
 import passport from 'passport';
 import basicStrategy from 'passport-http';
-import { InjectFunction, ProviderScope } from '@graphql-modules/di';
+import { InjectFunction } from '@graphql-modules/di';
 
 export interface IAppModuleConfig {
   connection: Connection,
