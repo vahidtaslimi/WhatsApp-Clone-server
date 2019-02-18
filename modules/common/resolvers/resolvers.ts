@@ -1,6 +1,4 @@
 import { GraphQLDateTime } from 'graphql-iso-date';
-import { IResolvers } from '../../../types';
+import { ScalarType } from 'graphql-toolkit';
 
-export default {
-  Date: GraphQLDateTime,
-} as IResolvers;
+export const Date = GraphQLDateTime;

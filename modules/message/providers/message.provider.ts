@@ -1,10 +1,10 @@
 import { Injectable } from '@graphql-modules/di'
 import { PubSub } from 'apollo-server-express'
 import { Connection } from 'typeorm'
-import { User } from '../../../entity/User';
-import { Chat } from '../../../entity/Chat';
+import { User } from '../models/User';
+import { Chat } from '../models/Chat';
 import { ChatProvider } from '../../chat/providers/chat.provider';
-import { Message } from '../../../entity/Message';
+import { Message } from '../models/Message';
 import { MessageType } from '../../../db';
 import { UserProvider } from '../../user/providers/user.provider';
 
@@ -18,7 +18,7 @@ export class MessageProvider {
   ) { }
 
   repository = this.connection.getRepository(Message);
-  currentUser = this.userProvider.currentUser;
+  currentUser = this.userProvider.currentUser as User;
 
   createQueryBuilder() {
     return this.connection.createQueryBuilder(Message, 'message');
@@ -35,7 +35,7 @@ export class MessageProvider {
       .innerJoinAndSelect('chat.allTimeMembers', 'allTimeMembers')
       .innerJoinAndSelect('chat.listingMembers', 'listingMembers')
       .leftJoinAndSelect('chat.actualGroupMembers', 'actualGroupMembers')
-      .getOne();
+      .getOne() as Chat;
 
     if (!chat) {
       throw new Error(`Cannot find chat ${chatId}.`);
@@ -44,21 +44,27 @@ export class MessageProvider {
     let holders: User[];
 
     if (!chat.name) {
+      const listingMembers = await chat.listingMembers;
       // Chat
-      if (!chat.listingMembers.map(user => user.id).includes(this.currentUser.id)) {
+      if (!listingMembers.map(user => user.id).includes(this.currentUser.id)) {
         throw new Error(`The chat ${chatId} must be listed for the current user in order to add a message.`);
       }
+      
+      const allTimeMembers = await chat.allTimeMembers;
 
       // Receiver's user
-      const user = chat.allTimeMembers.find(user => user.id !== this.currentUser.id);
+      const user = allTimeMembers.find(user => user.id !== this.currentUser.id);
 
       if (!user) {
         throw new Error(`Cannot find receiver's user.`);
       }
 
-      if (!chat.listingMembers.find(listingMember => listingMember.id === user.id)) {
+      if (!listingMembers.find(listingMember => listingMember.id === user.id)) {
         // Chat is not listed for the receiver user. Add him to the listingIds
-        chat.listingMembers.push(user);
+        chat.listingMembers = Promise.resolve([
+          ...listingMembers,
+          user
+        ]);
 
         await this.chatProvider.repository.save(chat);
 
@@ -68,14 +74,15 @@ export class MessageProvider {
         });
       }
 
-      holders = chat.listingMembers;
+      holders = await chat.listingMembers as User[];
     } else {
+      const actualGroupMembers = await chat.actualGroupMembers as User[];
       // Group
-      if (!chat.actualGroupMembers || !chat.actualGroupMembers.find(user => user.id === this.currentUser.id)) {
+      if (!actualGroupMembers || !actualGroupMembers.find(user => user.id === this.currentUser.id)) {
         throw new Error(`The user is not a member of the group ${chatId}. Cannot add message.`);
       }
 
-      holders = chat.actualGroupMembers;
+      holders = actualGroupMembers;
     }
 
     const message = await this.repository.save(new Message({
@@ -110,13 +117,15 @@ export class MessageProvider {
       .innerJoinAndSelect('chat.listingMembers', 'listingMembers')
       .innerJoinAndSelect('chat.messages', 'messages')
       .innerJoinAndSelect('messages.holders', 'holders')
-      .getOne();
+      .getOne() as Chat;
 
     if (!chat) {
       throw new Error(`Cannot find chat ${chatId}.`);
     }
 
-    if (!chat.listingMembers.find(user => user.id === this.currentUser.id)) {
+    const listingMembers = await chat.listingMembers;
+
+    if (!listingMembers.find(user => user.id === this.currentUser.id)) {
       throw new Error(`The chat/group ${chatId} is not listed for the current user so there is nothing to delete.`);
     }
 
@@ -130,6 +139,7 @@ export class MessageProvider {
 
     let deletedIds: string[] = [];
     let removedMessages: Message[] = [];
+    const messages = await chat.messages;
     // Instead of chaining map and filter we can loop once using reduce
     chat.messages = await chat.messages.reduce<Promise<Message[]>>(async (filtered$, message) => {
       const filtered = await filtered$;
@@ -185,7 +195,7 @@ export class MessageProvider {
     messages = messages.map(message => ({
       ...message,
       holders: message.holders.filter(user => user.id !== this.currentUser.id),
-    }));
+    } as Message));
 
     return messages;
   }
@@ -265,7 +275,7 @@ export class MessageProvider {
       .createQueryBuilder()
       .leftJoin('chat.listingMembers', 'listingMembers')
       .where('listingMembers.id = :id', { id: this.currentUser.id })
-      .getMany();
+      .getMany() as Chat[];
 
     for (let chat of chats) {
       chat.messages = await this.getChatMessages(chat);
@@ -327,7 +337,9 @@ export class MessageProvider {
 
     let relevantUsers: User[];
 
-    if (!messageAdded.chat.name) {
+    const chat = await messageAdded.chat;
+
+    if (!chat.name) {
       // Chat
       relevantUsers = (await this.userProvider
         .createQueryBuilder()
@@ -335,11 +347,12 @@ export class MessageProvider {
           'user.listingMemberChats',
           'listingMemberChats',
           'listingMemberChats.id = :chatId',
-          { chatId: messageAdded.chat.id },
+          { chatId: chat.id },
         )
         .getMany())
-        .filter(user => user.id != messageAdded.sender.id);
+        .filter(user => user.id != messageAdded.sender.id) as User[];
     } else {
+
       // Group
       relevantUsers = (await this.userProvider
         .createQueryBuilder()
@@ -347,10 +360,10 @@ export class MessageProvider {
           'user.actualGroupMemberChats',
           'actualGroupMemberChats',
           'actualGroupMemberChats.id = :chatId',
-          { chatId: messageAdded.chat.id },
+          { chatId: chat.id },
         )
         .getMany())
-        .filter(user => user.id != messageAdded.sender.id);
+        .filter(user => user.id != messageAdded.sender.id) as User[];
     }
 
     return relevantUsers.some(user => user.id === this.currentUser.id);

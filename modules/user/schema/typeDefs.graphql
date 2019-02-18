@@ -1,31 +1,6 @@
 scalar Upload
 
-type Query {
-  users: [User!] @auth
-}
-
-type UploadedFile {
-  url: String!
-}
-
-type Mutation {
-  updateUser(name: String, picture: String): User! @auth
-  uploadPicture(file: Upload!): UploadedFile! @auth
-}
-
 type Subscription {
   userAdded: User
   userUpdated: User
-}
-
-extend type User {
-  name: String
-  picture: String
-  phone: String
-}
-
-extend input CreateUserInput {
-  name: String
-  picture: String
-  phone: String
 }

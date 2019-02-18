@@ -1,9 +1,9 @@
 import 'reflect-metadata';
-import { Chat } from './entity/Chat';
-import { Recipient } from './entity/Recipient';
+import { Chat } from './modules/recipient/models/Chat';
+import { Recipient } from './modules/recipient/models/Recipient';
 import moment from 'moment';
-import { Message } from './entity/Message';
-import { User } from './entity/User';
+import { Message } from './modules/recipient/models/Message';
+import { User } from './modules/recipient/models/User';
 import { Connection } from 'typeorm';
 import AccountsPassword from '@accounts/password';
 import { hashPassword } from '@accounts/password/lib/utils';

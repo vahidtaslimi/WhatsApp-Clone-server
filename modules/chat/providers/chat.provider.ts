@@ -1,8 +1,8 @@
 import { Injectable } from '@graphql-modules/di'
 import { PubSub } from 'apollo-server-express'
 import { Connection } from 'typeorm'
-import { User } from '../../../entity/User';
-import { Chat } from '../../../entity/Chat';
+import { User } from '../models/User';
+import { Chat } from '../models/Chat';
 import { UserProvider } from '../../user/providers/user.provider';
 
 @Injectable()
@@ -15,7 +15,7 @@ export class ChatProvider {
   }
 
   repository = this.connection.getRepository(Chat);
-  currentUser = this.userProvider.currentUser;
+  currentUser = this.userProvider.currentUser as User;
 
   createQueryBuilder() {
     return this.connection.createQueryBuilder(Chat, 'chat');
@@ -43,7 +43,7 @@ export class ChatProvider {
     const user = await this.userProvider
       .createQueryBuilder()
       .whereInIds(userId)
-      .getOne();
+      .getOne() as User;
 
     if (!user) {
       throw new Error(`User ${userId} doesn't exist.`);
@@ -75,7 +75,10 @@ export class ChatProvider {
 
       if (!listingMembers.find(user => user.id === this.currentUser.id)) {
         // The chat isn't listed for the current user. Add him to the memberIds
-        chat.listingMembers.push(this.currentUser);
+        chat.listingMembers = Promise.resolve([
+          ...await chat.listingMembers,
+          this.currentUser
+        ]);
         chat = await this.repository.save(chat);
 
         return chat || null;
@@ -111,7 +114,7 @@ export class ChatProvider {
       const user = await this.userProvider
         .createQueryBuilder()
         .whereInIds(userId)
-        .getOne();
+        .getOne() as User;
 
       if (!user) {
         throw new Error(`User ${userId} doesn't exist.`);
@@ -123,7 +126,7 @@ export class ChatProvider {
     const chat = await this.repository.save(
       new Chat({
         name: groupName,
-        admins: [this.currentUser],
+        admins: [this.currentUser ],
         picture: groupPicture || undefined,
         owner: this.currentUser,
         allTimeMembers: [...users, this.currentUser],
@@ -186,16 +189,20 @@ export class ChatProvider {
     }
 
     if (!chat.name) {
+      let listingMembers = await chat.listingMembers;
+
       // Chat
-      if (!chat.listingMembers.find(user => user.id === this.currentUser.id)) {
+      if (!listingMembers.find(user => user.id === this.currentUser.id)) {
         throw new Error(`The user is not a listing member of the chat ${chatId}.`)
       }
 
       // Remove the current user from who gets the chat listed. The chat will no longer appear in his list
-      chat.listingMembers = chat.listingMembers.filter(user => user.id !== this.currentUser.id);
+      chat.listingMembers = Promise.resolve(listingMembers.filter(user => user.id !== this.currentUser.id));
+
+      listingMembers = await chat.listingMembers;
 
       // Check how many members are left
-      if (chat.listingMembers.length === 0) {
+      if (listingMembers.length === 0) {
         // Delete the chat
         await this.repository.remove(chat);
       } else {
@@ -207,25 +214,36 @@ export class ChatProvider {
     } else {
       // Group
 
+      let listingMembers = await chat.listingMembers;
+
       // Remove the current user from who gets the group listed. The group will no longer appear in his list
-      chat.listingMembers = chat.listingMembers.filter(user => user.id !== this.currentUser.id);
+      chat.listingMembers = Promise.resolve(listingMembers.filter(user => user.id !== this.currentUser.id));
+
+      listingMembers = await chat.listingMembers;
 
       // Check how many members (including previous ones who can still access old messages) are left
-      if (chat.listingMembers.length === 0) {
+      if (listingMembers.length === 0) {
         // Remove the group
         await this.repository.remove(chat);
       } else {
         // Update the group
 
+        const actualGroupMembers = await chat.actualGroupMembers;
         // Remove the current user from the chat members. He is no longer a member of the group
-        chat.actualGroupMembers = chat.actualGroupMembers && chat.actualGroupMembers.filter(user =>
+        chat.actualGroupMembers = actualGroupMembers && Promise.resolve(actualGroupMembers.filter(user =>
           user.id !== this.currentUser.id
-        );
+        ));
+        
+        let admins = await chat.admins;
+
         // Remove the current user from the chat admins
-        chat.admins = chat.admins && chat.admins.filter(user => user.id !== this.currentUser.id);
+        chat.admins = admins && Promise.resolve((await admins).filter(user => user.id !== this.currentUser.id));
+        
+        admins = await chat.admins;
+        
         // If there are no more admins left the group goes read only
         // A null owner means the group is read-only
-        chat.owner = chat.admins && chat.admins[0] || null;
+        chat.owner = admins && Promise.resolve(admins[0] || null);
 
         await this.repository.save(chat);
       }
@@ -234,109 +252,10 @@ export class ChatProvider {
     }
   }
 
-  async getChatName(chat: Chat) {
-    if (chat.name) {
-      return chat.name;
-    }
-
-    const user = await this.userProvider
-      .createQueryBuilder()
-      .where('user.id != :userId', { userId: this.currentUser.id })
-      .innerJoin(
-        'user.allTimeMemberChats',
-        'allTimeMemberChats',
-        'allTimeMemberChats.id = :chatId',
-        { chatId: chat.id },
-      )
-      .getOne();
-
-    return (user && user.name) || null;
-  }
-
-  async getChatPicture(chat: Chat) {
-
-    if (chat.name) {
-      return chat.picture;
-    }
-
-    const user = await this.userProvider
-      .createQueryBuilder()
-      .where('user.id != :userId', { userId: this.currentUser.id })
-      .innerJoin(
-        'user.allTimeMemberChats',
-        'allTimeMemberChats',
-        'allTimeMemberChats.id = :chatId',
-        { chatId: chat.id },
-      )
-      .getOne();
-
-    return user ? user.picture : null;
-  }
-
-  getChatAllTimeMembers(chat: Chat) {
-    return this.userProvider
-      .createQueryBuilder()
-      .innerJoin(
-        'user.listingMemberChats',
-        'listingMemberChats',
-        'listingMemberChats.id = :chatId',
-        { chatId: chat.id },
-      )
-      .getMany()
-  }
-
-  getChatListingMembers(chat: Chat) {
-    return this.userProvider
-      .createQueryBuilder()
-      .innerJoin(
-        'user.listingMemberChats',
-        'listingMemberChats',
-        'listingMemberChats.id = :chatId',
-        { chatId: chat.id },
-      )
-      .getMany();
-  }
-
-  getChatActualGroupMembers(chat: Chat) {
-    return this.userProvider
-      .createQueryBuilder()
-      .innerJoin(
-        'user.actualGroupMemberChats',
-        'actualGroupMemberChats',
-        'actualGroupMemberChats.id = :chatId',
-        { chatId: chat.id },
-      )
-      .getMany();
-  }
-
-  getChatAdmins(chat: Chat) {
-    return this.userProvider
-      .createQueryBuilder()
-      .innerJoin('user.adminChats', 'adminChats', 'adminChats.id = :chatId', {
-        chatId: chat.id,
-      })
-      .getMany();
-  }
-
-  async getChatOwner(chat: Chat) {
-    const owner = await this.userProvider
-      .createQueryBuilder()
-      .innerJoin('user.ownerChats', 'ownerChats', 'ownerChats.id = :chatId', {
-        chatId: chat.id,
-      })
-      .getOne();
-
-    return owner || null;
-  }
-
-  async isChatGroup(chat: Chat) {
-    return !!chat.name;
-  }
-
   async filterChatAddedOrUpdated(chatAddedOrUpdated: Chat, creatorOrUpdaterId: number) {
 
     return creatorOrUpdaterId.toString() !== this.currentUser.id &&
-      chatAddedOrUpdated.listingMembers.some((user: User) => user.id === this.currentUser.id);
+      (await chatAddedOrUpdated.listingMembers).some((user: User) => user.id === this.currentUser.id);
   }
 
   async updateUser({

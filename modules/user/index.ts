@@ -1,6 +1,6 @@
 /// <reference path="../../cloudinary.d.ts" />
 import { GraphQLModule } from '@graphql-modules/core';
-import { loadResolversFiles, loadSchemaFiles } from 'graphql-toolkit';
+import { loadResolversFiles, loadSchemaFiles, getObjectTypeFromClass, extractFieldResolversFromObjectType } from 'graphql-toolkit';
 import { UserProvider } from './providers/user.provider';
 import { CommonModule } from '../common';
 import { ProviderScope, InjectFunction } from '@graphql-modules/di';
@@ -8,6 +8,11 @@ import { PubSub } from 'graphql-subscriptions';
 import AccountsServer, { ServerHooks } from '@accounts/server';
 import { AccountsModule } from '@accounts/graphql-api';
 import cloudinary from 'cloudinary';
+import { Mutation } from './models/Mutation';
+import { Query } from './models/Query';
+import { UploadedFile } from './models/UploadedFile';
+import { User } from './models/User';
+import { printType } from 'graphql';
 
 export const UserModule = new GraphQLModule({
   name: 'User',
@@ -19,8 +24,38 @@ export const UserModule = new GraphQLModule({
     UserProvider,
   ],
   defaultProviderScope: ProviderScope.Session,
-  typeDefs: loadSchemaFiles(__dirname + '/schema/'),
-  resolvers: loadResolversFiles(__dirname + '/resolvers/'),
+  typeDefs: [
+    printType(
+      getObjectTypeFromClass(Mutation)
+    ),
+    printType(
+      getObjectTypeFromClass(Query)
+    ),
+    printType(
+      getObjectTypeFromClass(UploadedFile)
+    ),
+    printType(
+      getObjectTypeFromClass(User)
+    ),
+    ...loadSchemaFiles(__dirname + '/schema/')
+  ],
+  resolvers: [
+    {
+      Mutation: extractFieldResolversFromObjectType(
+        getObjectTypeFromClass(Mutation)
+      ),
+      Query: extractFieldResolversFromObjectType(
+        getObjectTypeFromClass(Query)
+      ),
+      UploadedFile: extractFieldResolversFromObjectType(
+        getObjectTypeFromClass(UploadedFile)
+      ),
+      User: extractFieldResolversFromObjectType(
+        getObjectTypeFromClass(User)
+      )
+    },
+    ...loadResolversFiles(__dirname + '/resolvers/')
+  ],
   middleware: InjectFunction(PubSub, AccountsServer)((pubSub, accountsServer) => {
 
     const CLOUDINARY_URL = process.env.CLOUDINARY_URL || '';

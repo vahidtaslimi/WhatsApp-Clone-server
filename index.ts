@@ -12,7 +12,7 @@ import { AppModule } from './modules/app.module';
 import { AccountsTypeorm } from '@accounts/typeorm';
 import AccountsServer from '@accounts/server';
 import AccountsPassword from '@accounts/password';
-import { User } from './entity/User';
+import { User } from './modules/recipient/models/User';
 
 createConnection().then(async connection => {
 

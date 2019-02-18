@@ -1,49 +1,62 @@
 import {
-  Entity, Column, PrimaryGeneratedColumn, OneToMany, ManyToOne, ManyToMany, JoinTable, CreateDateColumn
+  Entity, Column, PrimaryGeneratedColumn, ManyToOne, ManyToMany, JoinTable, CreateDateColumn
 } from 'typeorm';
 import { Chat } from './Chat';
 import { User } from './User';
-import { Recipient } from './Recipient';
-import { MessageType } from '../db';
+import { MessageType } from '../../../db';
+import { Field, Inject, ObjectType } from 'graphql-toolkit';
+import { MessageProvider } from '../providers/message.provider';
 
-interface MessageConstructor {
+export interface MessageConstructor {
   sender?: User;
   content?: string;
   createdAt?: Date,
   type?: MessageType;
-  recipients?: Recipient[];
   holders?: User[];
   chat?: Chat;
 }
 
 @Entity()
+@ObjectType({ injector: ({ injector }) => injector })
 export class Message {
+
+  @Inject() messageProvider: MessageProvider;
+
   @PrimaryGeneratedColumn()
+  @Field()
   id: number;
 
   @ManyToOne(type => User, user => user.senderMessages, {eager: true})
+  @Field(type => User)
   sender: User;
 
   @Column()
+  @Field()
   content: string;
 
   @CreateDateColumn({nullable: true})
+  @Field()
   createdAt: Date;
 
   @Column()
+  @Field()
   type: number;
-
-  @OneToMany(type => Recipient, recipient => recipient.message, {cascade: ["insert", "update"], eager: true})
-  recipients: Recipient[];
 
   @ManyToMany(type => User, user => user.holderMessages, {cascade: ["insert", "update"], eager: true})
   @JoinTable()
+  @Field(type => [User])
   holders: User[];
 
-  @ManyToOne(type => Chat, chat => chat.messages)
-  chat: Chat;
+  @ManyToOne(type => Chat, chat => chat.messages, { lazy: true })
+  @Field(type => Chat)
+  chat: Promise<Chat>;
 
-  constructor({sender, content, createdAt, type, recipients, holders, chat}: MessageConstructor = {}) {
+  @Field(type => User)
+  ownership() {
+    return this.messageProvider.getMessageOwnership(this);
+  }
+
+  constructor({sender, content, createdAt, type, holders, chat}: MessageConstructor = {}) {
     if (sender) {
       this.sender = sender;
     }
@@ -56,15 +69,11 @@ export class Message {
     if (type) {
       this.type = type;
     }
-    if (recipients) {
-      recipients.forEach(recipient => recipient.message = this);
-      this.recipients = recipients;
-    }
     if (holders) {
       this.holders = holders;
     }
     if (chat) {
-      this.chat = chat;
+      this.chat = Promise.resolve(chat);
     }
   }
 }

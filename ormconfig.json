@@ -2,13 +2,13 @@
     "type": "postgres",
     "host": "localhost",
     "port": 5432,
-    "username": "test",
-    "password": "test",
-    "database": "whatsapp",
+    "username": "postgres",
+    "password": "deneme12",
+    "database": "wazaap",
     "synchronize": false,
     "logging": false,
     "entities": [
-        "entity/**/*.ts"
+        "modules/**/*.ts"
     ],
     "migrations": [
        "migration/**/*.ts"
@@ -17,7 +17,7 @@
        "subscriber/**/*.ts"
     ],
     "cli": {
-       "entitiesDir": "entity",
+       "entitiesDir": "modules",
        "migrationsDir": "migration",
        "subscribersDir": "subscriber"
     }

@@ -3,12 +3,10 @@
   "description": "A newly created Tortilla project",
   "private": true,
   "scripts": {
-    "generate": "gql-gen",
-    "generate:watch": "nodemon --exec yarn generate -e graphql",
     "start:server": "ts-node index.ts",
     "start:server:watch": "nodemon --exec yarn start:server -e ts",
-    "dev": "concurrently \"yarn generate:watch\" \"yarn start:server:watch\"",
-    "start": "yarn generate && yarn start:server"
+    "dev": "yarn start:server:watch",
+    "start": "yarn start:server"
   },
   "devDependencies": {
     "@types/body-parser": "^1.17.0",
@@ -20,11 +18,6 @@
     "@types/pg": "^7.4.11",
     "@types/tmp": "^0.0.33",
     "concurrently": "^4.1.0",
-    "graphql-code-generator": "^0.16.0",
-    "graphql-codegen-add": "^0.16.0",
-    "graphql-codegen-typescript-common": "^0.16.0",
-    "graphql-codegen-typescript-resolvers": "^0.16.0",
-    "graphql-codegen-typescript-server": "^0.16.0",
     "nodemon": "^1.18.9",
     "ts-node": "^8.0.2",
     "typescript": "^3.2.2"
@@ -35,7 +28,6 @@
     "@accounts/server": "^0.11.2",
     "@accounts/typeorm": "^0.11.2",
     "@graphql-modules/core": "0.4.2",
-    "graphql-toolkit": "0.0.5",
     "apollo-server-express": "^2.3.1",
     "body-parser": "^1.18.3",
     "cloudinary": "^1.13.2",
@@ -44,6 +36,7 @@
     "express": "^4.16.4",
     "graphql": "^14.0.2",
     "graphql-iso-date": "^3.6.1",
+    "graphql-toolkit": "0.0.6-e0308f8.0",
     "moment": "^2.23.0",
     "pg": "^7.8.0",
     "reflect-metadata": "^0.1.12",

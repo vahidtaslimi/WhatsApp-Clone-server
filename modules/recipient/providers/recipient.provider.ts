@@ -1,10 +1,11 @@
 import { Injectable, ProviderScope } from '@graphql-modules/di'
 import { Connection } from 'typeorm'
 import { MessageProvider } from '../../message/providers/message.provider';
-import { Chat } from '../../../entity/Chat';
-import { Message } from '../../../entity/Message';
-import { Recipient } from '../../../entity/Recipient';
+import { Chat } from '../models/Chat';
+import { Message } from '../models/Message';
+import { Recipient } from '../models/Recipient';
 import { UserProvider } from '../../user/providers/user.provider';
+import { User } from '../models/User';
 
 @Injectable({
   scope: ProviderScope.Session,
@@ -43,11 +44,12 @@ export class RecipientProvider {
   }
 
   async getRecipientChat(recipient: Recipient) {
-    if (recipient.message.chat) {
-      return recipient.message.chat;
+    const message = await recipient.message;
+    if (await message.chat) {
+      return await message.chat;
     }
 
-    return this.messageProvider.getMessageChat(recipient.message);
+    return this.messageProvider.getMessageChat(message);
   }
 
   async removeChat(chatId: string) {
@@ -70,9 +72,9 @@ export class RecipientProvider {
   }
 
   async addMessage(chatId: string, content: string) {
-    const message = await this.messageProvider.addMessage(chatId, content);
+    const message = await this.messageProvider.addMessage(chatId, content) as Message;
 
-    for (let user of message.holders) {
+    for (let user of message.holders as User[]) {
       if (user.id !== this.currentUser.id) {
         await this.repository.save(new Recipient({ user, message }));
       }

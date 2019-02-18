@@ -1,12 +1,12 @@
 import { Injectable } from '@graphql-modules/di'
 import { PubSub } from 'apollo-server-express'
 import { Connection } from 'typeorm'
-import { User } from '../../../entity/User';
+import { User } from '../models/User';
 import AccountsServer from '@accounts/server';
-import { UploadedFile } from '../../../types';
 import { ModuleSessionInfo, OnRequest, OnConnect } from '@graphql-modules/core';
 import { AccountsModuleContext } from '@accounts/graphql-api';
 import cloudinary from 'cloudinary';
+import { UploadedFile } from '../models/UploadedFile';
 
 @Injectable()
 export class UserProvider implements OnRequest, OnConnect {
