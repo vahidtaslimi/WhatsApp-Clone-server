@@ -1739,10 +1739,10 @@ graphql-toolkit@0.0.5, graphql-toolkit@^0.0.5:
     request "2.88.0"
     valid-url "1.0.9"
 
-graphql-toolkit@0.0.6-e0308f8.0:
-  version "0.0.6-e0308f8.0"
-  resolved "https://registry.yarnpkg.com/graphql-toolkit/-/graphql-toolkit-0.0.6-e0308f8.0.tgz#4db1e609f2dcff89f86f0c4a1c9f8f390aaffc43"
-  integrity sha512-/vXZleeuz2b/lpJpHNJGBe4b+34tgd9KQ6R7UgO/Fk/wNur5I3BGIiy7HfCrG4Pgx31+aTtpSuZWbksGMeYFjg==
+graphql-toolkit@0.0.6-ddee125.0:
+  version "0.0.6-ddee125.0"
+  resolved "https://registry.yarnpkg.com/graphql-toolkit/-/graphql-toolkit-0.0.6-ddee125.0.tgz#f45bd69b1243ade87f9568018386da7ddc3cdaac"
+  integrity sha512-bsTmYV8Tb4r42Fc7pKun5M5UitDamIpf2YmWw1ROjKPMFAWrxiH/cLB/uQWjVjUHgonE8LCaHJ4AiZkNZih2YA==
   dependencies:
     deepmerge "3.1.0"
     glob "7.1.3"

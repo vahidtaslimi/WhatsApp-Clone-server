@@ -2,7 +2,6 @@ import { Chat as ChatModuleChat, ChatConstructor as ChatModuleChatConstructor } 
 import { Entity, OneToMany } from 'typeorm';
 import { ObjectType, Field, Arg } from 'graphql-toolkit';
 import { Message } from './Message';
-import { User } from '../../user/models/User';
 import { Inject } from '@graphql-modules/di';
 import { MessageProvider } from '../providers/message.provider';
 

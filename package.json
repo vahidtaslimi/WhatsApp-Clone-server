@@ -36,7 +36,7 @@
     "express": "^4.16.4",
     "graphql": "^14.0.2",
     "graphql-iso-date": "^3.6.1",
-    "graphql-toolkit": "0.0.6-e0308f8.0",
+    "graphql-toolkit": "0.0.6-ddee125.0",
     "moment": "^2.23.0",
     "pg": "^7.8.0",
     "reflect-metadata": "^0.1.12",

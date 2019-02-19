@@ -1,5 +1,5 @@
 import { GraphQLModule } from '@graphql-modules/core';
-import { loadResolversFiles, loadSchemaFiles, getObjectTypeFromClass, extractFieldResolversFromObjectType } from 'graphql-toolkit';
+import { getObjectTypeFromClass, extractFieldResolversFromObjectType } from 'graphql-toolkit';
 import { UserModule } from '../user';
 import { ChatModule } from '../chat';
 import { MessageProvider } from './providers/message.provider';
@@ -10,6 +10,7 @@ import { Chat } from './models/Chat';
 import { Message } from './models/Message';
 import { Query } from './models/Query';
 import { Mutation } from './models/Mutation';
+import { Subscription } from './models/Subscription';
 
 export const MessageModule = new GraphQLModule({
   name: "Message",
@@ -35,9 +36,11 @@ export const MessageModule = new GraphQLModule({
     printType(
       getObjectTypeFromClass(Mutation)
     ),
-    ...loadSchemaFiles(__dirname + '/schema/')
+    printType(
+      getObjectTypeFromClass(Subscription)
+    )
   ],
-  resolvers: [
+  resolvers:
     {
       Chat: extractFieldResolversFromObjectType(
         getObjectTypeFromClass(Chat)
@@ -50,8 +53,9 @@ export const MessageModule = new GraphQLModule({
       ),
       Mutation: extractFieldResolversFromObjectType(
         getObjectTypeFromClass(Mutation)
+      ),
+      Subscription: extractFieldResolversFromObjectType(
+        getObjectTypeFromClass(Subscription)
       )
     },
-    ...loadResolversFiles(__dirname + '/resolvers/')
-  ],
 });

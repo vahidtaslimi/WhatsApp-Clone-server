@@ -1,5 +1,5 @@
 import { GraphQLModule } from '@graphql-modules/core';
-import { loadResolversFiles, loadSchemaFiles, getObjectTypeFromClass, extractFieldResolversFromObjectType } from 'graphql-toolkit';
+import { getObjectTypeFromClass, extractFieldResolversFromObjectType } from 'graphql-toolkit';
 import { UserModule } from '../user';
 import { ChatProvider } from './providers/chat.provider';
 import { CommonModule } from '../common';
@@ -8,6 +8,7 @@ import { printType } from 'graphql';
 import { Chat } from './models/Chat';
 import { Query } from './models/Query';
 import { Mutation } from './models/Mutation';
+import { Subscription } from './models/Subscription';
 
 export const ChatModule = new GraphQLModule({
   name: "Chat",
@@ -29,10 +30,11 @@ export const ChatModule = new GraphQLModule({
     printType(
       getObjectTypeFromClass(Mutation)
     ),
-    ...loadSchemaFiles(__dirname + '/schema/')
+    printType(
+      getObjectTypeFromClass(Subscription)
+    )
   ],
-  resolvers: [
-    {
+  resolvers: {
       Chat: extractFieldResolversFromObjectType(
         getObjectTypeFromClass(Chat)
       ),
@@ -41,18 +43,9 @@ export const ChatModule = new GraphQLModule({
       ),
       Mutation: extractFieldResolversFromObjectType(
         getObjectTypeFromClass(Mutation)
+      ),
+      Subscription: extractFieldResolversFromObjectType(
+        getObjectTypeFromClass(Subscription)
       )
     },
-    ...loadResolversFiles(__dirname + '/resolvers/')
-  ],
 });
-
-console.log(printType(
-  getObjectTypeFromClass(Chat)
-),
-printType(
-  getObjectTypeFromClass(Query)
-),
-printType(
-  getObjectTypeFromClass(Mutation)
-));

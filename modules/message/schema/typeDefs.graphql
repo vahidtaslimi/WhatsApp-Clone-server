@@ -1,9 +1,0 @@
-type Subscription {
-  messageAdded: Message
-}
-
-enum MessageType {
-  LOCATION
-  TEXT
-  PICTURE
-}
